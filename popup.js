@@ -258,6 +258,34 @@ async function InitPage()
     }
   });
   
+  if (settings['defaults']['updates'] && local_storage !== null)
+  {
+    let current_time = Date.now();
+    
+    local_storage.local.get(["MikroTikControlPanelGithub"]).then((result) => {
+      if (typeof result.MikroTikControlPanelGithub == 'undefined' || current_time - result.MikroTikControlPanelGithub.time > 86400000)
+        fetch("https://api.github.com/repos/DenSyo77/MikroTikControlPanel/releases/latest", {
+          method: "GET",
+          headers: { "Accept": "application/json", "Content-Type": "application/json" }
+        }).then((response) => { return response.json(); }).then((data) => {
+          let current_version = data.tag_name.substring(1);
+          
+          local_storage.local.set({"MikroTikControlPanelGithub": { version: current_version, name: data.name, time: current_time, url: data.html_url } });
+          
+          if (current_version != settings.version)
+          {
+            document.getElementById("updates-available").href = data.html_url;
+            document.getElementById("updates-available").innerHTML = data.name + " available on GitHub";
+          }
+        }).catch(function() {});
+      else if (result.MikroTikControlPanelGithub.version != settings.version)
+      {
+        document.getElementById("updates-available").href = result.MikroTikControlPanelGithub.url;
+        document.getElementById("updates-available").innerHTML = result.MikroTikControlPanelGithub.name + " available on GitHub";
+      }
+    });
+  }
+  
   document.getElementById("controlpanel-button").addEventListener("click", () => {
     HideViewControlPanel();
   });

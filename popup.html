@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>MikroTik control panel</title>
+<link rel="stylesheet" type="text/css" href="popup.css"/>
+</head>
+<body>
+  <div><button id="controlpanel-button" class="headerbutton1">MikroTik Control Panel...</button></div>
+  <div id="controlpanel-block" style="margin-bottom:8px;" hidden>
+    <p class="infomessage" id="controlpanel-cpu" style="font-size:13px;">-</p>
+    <div><button id="localroutes-button" class="headerbutton2" style="margin-top:8px;">Localhosts routes...</button></div>
+    <div id="localroutes-block" hidden>
+      <table id="localroutes-table" class="tableinfo"></table>
+    </div>
+    <div><button id="domainsroutes-button" class="headerbutton2" style="margin-top:8px;">Pages routes...</button></div>
+    <div id="domainsroutes-block" hidden>
+      <table id="domainsroutes-table" class="tableinfo"></table>
+    </div>
+  </div>
+  <p class="errormessage" id="error-messages" style="font-weight:normal;font-size:13px;"></p>
+  <p class="infomessage" id="current-address" style="font-weight:bold;font-size:14px;"></p>
+  <p class="infomessage" id="address-info" style="font-size:12px;"></p>
+  <div style="margin-top:8px;">
+    <label for="local-address">Host:</label>
+    <input type="text" id="local-address" value="" style="width:160px;margin-left:4px;text-align:left;" />
+  </div>
+  <div style="margin-top:10px;">
+    <label for="route-selection">Route:</label>
+    <select id="route-selection" style="width:152px;margin-left:5px;"></select>
+  </div>
+  <button id="route-button" class="formsbutton2">Apply</button>
+  <p class="infomessage" id="current-page" style="font-weight:bold;font-size:14px;">-</p>
+  <p class="infomessage" id="page-address" style="font-size:14px;">-</p>
+  <p class="infomessage" id="page-info" style="font-size:12px;"></p>
+  <div style="margin-top:10px;">
+    <label for="domain-selection">Route:</label>
+    <select id="domain-selection" style="width:152px;margin-left:5px;"></select>
+  </div>
+  <div style="margin-top:11px;">
+    <input type="checkbox" id="domain-dynamic"/>
+    <label for="domain-dynamic">Dynamic:</label>
+    <input type="text" id="domain-time" value="" style="width:112px;margin-left:4px;text-align:left;" />
+  </div>
+  <div style="margin-top:8px;">
+    <input type="radio" id="domain-top" name="what-add" />
+    <label for="domain-top">Top</label>
+    <input type="radio" id="domain-www" name="what-add" style="margin-left:10px;" checked />
+    <label for="domain-www">WWW</label>
+    <input type="radio" id="domain-all" name="what-add" style="margin-left:10px;" />
+    <label for="domain-all">All</label>
+  </div>
+  <div style="margin-top:8px;">
+    <input type="radio" id="domain-name" name="how-add" checked />
+    <label for="domain-name">Domain</label>
+    <input type="radio" id="domain-address" name="how-add" style="margin-left:10px;" />
+    <label for="domain-address">Address</label>
+  </div>
+  <button id="domain-button" class="formsbutton2">Apply</button>
+  <div><button id="settings-button" class="headerbutton1">Settings...</button></div>
+  <div id="settings-block" hidden>
+    <div style="margin-top:11px;">
+      <input type="checkbox" id="localip-byuser"/>
+      <label for="localip-byuser">Localhost IP by user</label>
+    </div>
+    <div style="margin-top:10px;">
+      <label for="router-address">Router:</label>
+      <input type="text" id="router-address" value="" style="margin-left:4px;width:147px;text-align:left;" />
+    </div>
+    <div style="margin-top:10px;">
+      <label for="router-user">User:</label>
+      <input type="text" id="router-user" value="" style="margin-left:4px;width:160px;text-align:left;" />
+    </div>
+    <div style="margin-top:10px;">
+      <label for="router-user">Password:</label>
+      <input type="password" id="router-password" value="" style="margin-left:4px;width:130px;text-align:left;" />
+    </div>
+    <div style="margin-top:10px;">
+      <label for="protocol-selection">Protocol:</label>
+      <select id="protocol-selection" style="width:135px;margin-left:5px;">
+        <option value="http">HTTP</option>
+        <option value="https">HTTPS</option>
+      </select>
+    </div>
+    <div style="margin-top:10px;">
+      <label for="top-domains">WWW:</label>
+      <input type="text" id="top-domains" value="" style="margin-left:4px;width:150px;text-align:left;" />
+    </div>
+    <div style="margin-top:11px;">
+      <input type="checkbox" id="page-allip"/>
+      <label for="page-allip">Show all page IP</label>
+    </div>
+    <div style="margin-top:10px;">
+      <label for="api-myip-selection">My IP:</label>
+      <select id="api-myip-selection" style="width:153px;margin-left:5px;">
+      </select>
+    </div>
+    <div style="margin-top:10px;">
+      <label for="api-whois-selection">Whois:</label>
+      <select id="api-whois-selection" style="width:149px;margin-left:5px;">
+      </select>
+    </div>
+    <div style="margin-top:11px;">
+      <input type="checkbox" id="check-updates"/>
+      <label for="check-updates">Check updates</label>
+    </div>
+    <button id="save-button" class="formsbutton1">Save settings</button>
+    <p class="infomessage" id="settings-info" style="font-size:14px;font-style:italic;"></p>
+  </div>
+  <script src="settings.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

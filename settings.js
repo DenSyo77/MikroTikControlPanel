@@ -1,10 +1,10 @@
-// MikroTik Control Panel browser plugin
-// See last version:
-// http://syo.su/download/MikroTikControlPanel.zip
+// MikroTik Control Panel browser extension
+// https://github.com/DenSyo77/MikroTikControlPanel
 // © 2024 DenSyo
 // e-mail: den@syo.su
 // http://syo.su
 // 
+// "localhost": default local network address
 // "router": local network router address
 // "protocol": "http" or "https"
 // "dynamic": default value of dynamic domain address
@@ -14,7 +14,7 @@
 // "how": "name" or "address"
 
 const settings = {
-  "version": "1.1",
+  "version": "1.1.1",
   "localhost": "192.168.88.77",
   "router": "192.168.88.1",
   "protocol": "http",

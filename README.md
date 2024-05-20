@@ -25,9 +25,12 @@ and for external hosts:
 /ip firewall mangle chain=prerouting action=mark-routing new-routing-mark=route-lte passthrough=no dst-address-list=lte-domains
 
 
-The 'not-routed' list should contain all service networks and external addresses of your network to avoid routing collisions.
+The 'not-routed' list should contain all service networks and external addresses of your network to avoid routing collisions (see array 'notrouted' in file setting.js as example).
 
-Fill arrays 'routes' and 'domains' in file settings.js with values for your gateways.
+Router is controlled via REST API, worth creating a separate account on the router in group with rights: read, write, api, rest-api and access only from trusted addresses. Username and password can be specified in application in settings section and saved in browser storage in encrypted form, or specified explicitly in file settings.js in appropriate fields.
+
+Fill arrays 'routes' and 'domains' in file settings.js with values for your gateways, array key - name displayed in the selection list, value - list name on the router. Fill arrays 'notrouted' or 'exclude' with addresses and subnets which should be excluded from routing rules. These arrays are equivalent, divided by entity, fill in at your discretion. Array key - network address, value - network prefix.
 
 
-Статья с первой версией на https://habr.com/ru/articles/791932/
+
+Статья с первой версией https://habr.com/ru/articles/791932/

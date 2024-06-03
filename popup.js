@@ -321,6 +321,14 @@ async function InitPage()
       if (!router_listnames.includes(data[i].list))
         router_listnames.push(data[i].list);
     
+    router_listnames.sort(function (a, b) {
+      if (a > b)
+        return 1;
+      if (a < b)
+        return -1;
+      return 0;
+    });
+    
     let router_listnames_options = '';
     for (let i = 0; i < router_listnames.length; i++)
       router_listnames_options += '<option value="' + router_listnames[i] + '">' + router_listnames[i] + '</option>';
@@ -828,7 +836,7 @@ async function SetPageRoute()
   let add_count = 1;
   if (add_www && last_domains_template.indexOf(',' + domain_struct[0] + ',') >= 0)
     add_count = 2;
-  else if (dd_all && domain_struct.length > 2)
+  else if (add_all && domain_struct.length > 2)
     add_count = domain_struct.length - 1;
   
   let domain_levels = new Array();
@@ -964,7 +972,7 @@ async function SetPageRoute()
   }
   
   if (opened_tab !== null)
-    setTimeout(function() { chrome.tabs.reload(opened_tab.id); }, 1000);
+    setTimeout(function() { chrome.tabs.reload(opened_tab.id); }, settings['tweaks']['apply_route_page_refresh_ms']);
 }
 
 function SaveSettings()

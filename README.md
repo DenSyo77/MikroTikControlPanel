@@ -29,7 +29,7 @@ The 'not-routed' list should contain all service networks and external addresses
 > 172.16.0.0/12  
 > 192.0.0.0/24  
 > 192.0.2.0/24  
-> 192.88.99.0/24
+> 192.88.99.0/24  
 > 192.168.0.0/16  
 > 198.18.0.0/15  
 > 198.51.100.0/24  

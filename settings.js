@@ -14,13 +14,14 @@
 // "how": "name" or "address"
 
 const settings = {
-  "version": "1.1.1",
+  "version": "1.1.2",
   "localhost": "192.168.88.77",
   "router": "192.168.88.1",
   "protocol": "http",
   "user": "",
   "password": "",
   "defaults": {
+    "notrouted": "",
     "dynamic": false,
     "time": "02:00:00",
     "www": "www,web,wap,m",
@@ -48,10 +49,6 @@ const settings = {
     "Singapore": "sin-domains"
   },
   "exclude": {
-    "1.1.1.1": 32,
-    "8.8.8.8": 32
-  },
-  "notrouted": {
     "0.0.0.0": 8,
     "10.0.0.0": 8,
     "100.64.0.0": 10,
@@ -65,7 +62,9 @@ const settings = {
     "198.18.0.0": 15,
     "198.51.100.0": 24,
     "203.0.113.0": 24,
-    "224.0.0.0": 3
+    "224.0.0.0": 3,
+    "1.1.1.1": 32,
+    "8.8.8.8": 32
   },
   "api": {
     "myip": [
@@ -194,6 +193,7 @@ const settings = {
     "domains_routes_refresh_ms": 5000,
     "domains_routes_addresses_limit": 1000,
     "router_gethosts_await_ms": 50,
-    "router_gethosts_await_tries": 20
+    "router_gethosts_await_tries": 20,
+    "check_updates_after_ms": 86400000
   }
 }

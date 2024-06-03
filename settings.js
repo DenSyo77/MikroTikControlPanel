@@ -14,7 +14,7 @@
 // "how": "name" or "address"
 
 const settings = {
-  "version": "1.1.2",
+  "version": "1.1.3",
   "localhost": "192.168.88.77",
   "router": "192.168.88.1",
   "protocol": "http",
@@ -188,6 +188,7 @@ const settings = {
     ]
   },
   "tweaks": {
+    "apply_route_page_refresh_ms": 1000,
     "control_panel_refresh_ms": 1000,
     "local_routes_refresh_ms": 3000,
     "domains_routes_refresh_ms": 5000,

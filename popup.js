@@ -1,4 +1,5 @@
 let opened_tab = null;
+let local_storage = null;
 let controlpanel_run = null;
 let localroutes_run = null;
 let domainsroutes_run = null;
@@ -11,11 +12,10 @@ let domains_query = '';
 let domains_mangle_query = '';
 let domains_mangle = new Array();
 let domains_regular = ',';
+let router_listnames = new Array();
+let notrouted_list = new Array();
 let exclude_minprefix = 32;
 let exclude_maxprefix = 0;
-let notrouted_minprefix = 32;
-let notrouted_maxprefix = 0;
-let local_storage = null;
 
 async function InitPage()
 {
@@ -63,13 +63,6 @@ async function InitPage()
       exclude_minprefix = settings['exclude'][subnet];
   }
   
-  for (let subnet in settings['notrouted']) {
-    if (settings['notrouted'][subnet] > notrouted_maxprefix)
-      notrouted_maxprefix = settings['notrouted'][subnet];
-    if (settings['notrouted'][subnet] < notrouted_minprefix)
-      notrouted_minprefix = settings['notrouted'][subnet];
-  }
-  
   document.getElementById("router-address").value = settings['router'];
   document.getElementById("router-user").value = settings['user'];
   document.getElementById("router-password").value = settings['password'];
@@ -78,8 +71,9 @@ async function InitPage()
   document.getElementById("domain-time").value = settings['defaults']['time'];
   document.getElementById("domain-" + settings['defaults']['how']).checked = true;
   document.getElementById("domain-" + settings['defaults']['what']).checked = true;
-  document.getElementById("top-domains").value = settings['defaults']['www'];
+  document.getElementById("last-domains").value = settings['defaults']['www'];
   document.getElementById("localip-byuser").checked = settings['defaults']['userip'];
+  document.getElementById("notrouted-list").value = settings['defaults']['notrouted'];
   document.getElementById("page-allip").checked = settings['defaults']['allip'];
   document.getElementById("check-updates").checked = settings['defaults']['updates'];
   
@@ -137,29 +131,58 @@ async function InitPage()
     for (let i = 0; i < data.length; i++)
       routes_mangle[data[i]['src-address-list']] = i;
     
-    if (settings['defaults']['userip'])
-    {
-      fetch(settings['protocol'] + "://" + settings['router'] + "/rest/user/active/print", {
-        method: "POST",
-        headers: { "Accept": "application/json", "Content-Type": "application/json", "Authorization": authuser },
-        body: '{".query": ["name=' + settings['user'] + '","via=(unknown)"]}'
-      }).then((response) => { return response.json(); }).then((data2) => {
-        if (data2.length)
-        {
-          document.getElementById("local-address").value = data2[data2.length - 1]['address'];
-          
-          RefreshLocalhostRoute();
-        }
-      }).catch(function() {
-        SetRouterApiError();
+    fetch(settings['protocol'] + "://" + settings['router'] + "/rest/ip/dhcp-server/lease/print", {
+      method: "POST",
+      headers: { "Accept": "application/json", "Content-Type": "application/json", "Authorization": authuser },
+      body: '{".query": ["disabled=false"]}'
+    }).then((response) => { return response.json(); }).then((data1) => {
+      data1.sort(function (a, b) {
+        let ip_a = ParseIp(a.address);
+        let ip_b = ParseIp(b.address);
+        if (ip_a > ip_b)
+          return 1;
+        if (ip_a < ip_b)
+          return -1;
+        return 0;
       });
-    }
-    else
-    {
-      document.getElementById("local-address").value = settings['localhost'];
       
-      RefreshLocalhostRoute();
-    }
+      let dhcp_options = '<option value=""></option>';
+      for (let i = 0; i < data1.length; i++)
+      {
+        let host_address = (typeof data1[i]['active-address'] != 'undefined' ? data1[i]['active-address'] : data1[i]['address']);
+        let host_name = (typeof data1[i]['host-name'] != 'undefined' ? ' ' + data1[i]['host-name'] : '');
+        
+        dhcp_options += '<option value="' + host_address + '">' + host_address + host_name + '</option>';
+      }
+      
+      document.getElementById("local-selection").innerHTML = dhcp_options;
+      
+      if (settings['defaults']['userip'])
+      {
+        fetch(settings['protocol'] + "://" + settings['router'] + "/rest/user/active/print", {
+          method: "POST",
+          headers: { "Accept": "application/json", "Content-Type": "application/json", "Authorization": authuser },
+          body: '{".query": ["name=' + settings['user'] + '","via=(unknown)"]}'
+        }).then((response) => { return response.json(); }).then((data2) => {
+          if (data2.length)
+          {
+            document.getElementById("local-address").value = data2[data2.length - 1]['address'];
+            document.getElementById("local-selection").value = data2[data2.length - 1]['address'];
+            
+            RefreshLocalhostRoute();
+          }
+        }).catch(function() {
+          SetRouterApiError();
+        });
+      }
+      else
+      {
+        document.getElementById("local-address").value = settings['localhost'];
+        document.getElementById("local-selection").value = settings['localhost'];
+        
+        RefreshLocalhostRoute();
+      }
+    });
   }).catch(function() {
     SetRouterApiError();
   });
@@ -176,6 +199,9 @@ async function InitPage()
       
       if (hostname.indexOf('.') > 0) {
         page_ip_all = await GetHostsFromRouter(hostname, 'temporary-' + settings['user'], settings['protocol'] + "://" + settings['router'], authuser);
+        
+        if (settings['defaults']['notrouted'])
+          notrouted_list = await GetAddressesListFromRouter(settings['defaults']['notrouted'], settings['protocol'] + "://" + settings['router'], authuser);
         
         if (page_ip_all.length)
           page_ip = page_ip_all[0];
@@ -263,7 +289,7 @@ async function InitPage()
     let current_time = Date.now();
     
     local_storage.local.get(["MikroTikControlPanelGithub"]).then((result) => {
-      if (typeof result.MikroTikControlPanelGithub == 'undefined' || current_time - result.MikroTikControlPanelGithub.time > 86400000)
+      if (typeof result.MikroTikControlPanelGithub == 'undefined' || current_time - result.MikroTikControlPanelGithub.time > settings.tweaks.check_updates_after_ms)
         fetch("https://api.github.com/repos/DenSyo77/MikroTikControlPanel/releases/latest", {
           method: "GET",
           headers: { "Accept": "application/json", "Content-Type": "application/json" }
@@ -286,6 +312,25 @@ async function InitPage()
     });
   }
   
+  fetch(settings['protocol'] + "://" + settings['router'] + "/rest/ip/firewall/address-list/print", {
+    method: "POST",
+    headers: { "Accept": "application/json", "Content-Type": "application/json", "Authorization": authuser },
+    body: '{".query": ["disabled=false"]}'
+  }).then((response) => { return response.json(); }).then((data) => {
+    for (let i = 0; i < data.length; i++)
+      if (!router_listnames.includes(data[i].list))
+        router_listnames.push(data[i].list);
+    
+    let router_listnames_options = '';
+    for (let i = 0; i < router_listnames.length; i++)
+      router_listnames_options += '<option value="' + router_listnames[i] + '">' + router_listnames[i] + '</option>';
+    
+    document.getElementById("notrouted-selection").innerHTML = router_listnames_options;
+    document.getElementById("notrouted-selection").value = settings['defaults']['notrouted'];
+  }).catch(function() {
+    SetRouterApiError();
+  });
+  
   document.getElementById("controlpanel-button").addEventListener("click", () => {
     HideViewControlPanel();
   });
@@ -300,6 +345,26 @@ async function InitPage()
   
   document.getElementById("local-address").addEventListener("keyup", (evt) => {
     OnKeyUpLocalhostIP(evt);
+  });
+  
+  document.getElementById("local-address").addEventListener("paste", (evt) => {
+    ChangeLocalhostIP(evt);
+  });
+  
+  document.getElementById("local-selection").addEventListener("change", () => {
+    ChangeLocalSelection();
+  });
+  
+  document.getElementById("notrouted-selection").addEventListener("change", () => {
+    ChangeNotroutedSelection();
+  });
+  
+  document.getElementById("notrouted-list").addEventListener("keyup", (evt) => {
+    OnKeyUpNotroutedList(evt);
+  });
+  
+  document.getElementById("notrouted-list").addEventListener("paste", (evt) => {
+    ChangeNotroutedList(evt);
   });
   
   document.getElementById("page-allip").addEventListener("change", () => {
@@ -325,6 +390,44 @@ function HideViewBlock(block_name)
   info_block.hidden = !info_block.hidden;
 }
 
+function ChangeLocalhostIP()
+{
+  let localhost = document.getElementById("local-address").value.replaceAll(' ', '');
+  
+  document.getElementById("local-selection").value = localhost;
+  document.getElementById("route-button").disabled = !localhost;
+}
+
+function ChangeLocalSelection()
+{
+  document.getElementById("local-address").value = document.getElementById("local-selection").value;
+  document.getElementById("route-button").disabled = !document.getElementById("local-selection").value;
+  RefreshLocalhostRoute();
+}
+
+function OnKeyUpLocalhostIP(evt)
+{
+  ChangeLocalhostIP();
+  
+  if (evt.key == 'Enter')
+    RefreshLocalhostRoute();
+}
+
+function ChangeNotroutedSelection()
+{
+  document.getElementById("notrouted-list").value = document.getElementById("notrouted-selection").value;
+}
+
+function ChangeNotroutedList()
+{
+  document.getElementById("notrouted-selection").value = document.getElementById("notrouted-list").value;
+}
+
+function OnKeyUpNotroutedList()
+{
+  ChangeNotroutedList();
+}
+
 function ShowAllPageIP()
 {
   if (document.getElementById("page-allip").checked)
@@ -343,12 +446,6 @@ function SetRouterApiError()
   document.getElementById("error-messages").innerHTML = "<b>Error connecting to router API</b><br>Check router address, username,<br>password and protocol in settings";
   document.getElementById("route-button").disabled = true;
   document.getElementById("domain-button").disabled = true;
-}
-
-function OnKeyUpLocalhostIP(evt)
-{
-  if (evt.key == 'Enter')
-    RefreshLocalhostRoute();
 }
 
 function RefreshLocalhostRoute()
@@ -520,6 +617,35 @@ async function GetHostsFromRouter(hostname, listname, router_url, authuser)
     });
   }
   
+  if (addresses.length > 1)
+    addresses.sort(function (a, b) {
+      let ip_a = ParseIp(a);
+      let ip_b = ParseIp(b);
+      if (ip_a > ip_b)
+        return 1;
+      if (ip_a < ip_b)
+        return -1;
+      return 0;
+    });
+  
+  return addresses;
+}
+
+async function GetAddressesListFromRouter(listname, router_url, authuser)
+{
+  let addresses = new Array();
+  
+  await fetch(router_url + "/rest/ip/firewall/address-list/print", {
+    method: 'POST',
+    headers: { "Accept": "application/json", "Content-Type": "application/json", "Authorization": authuser },
+    body: '{".query": ["disabled=false","list=' + listname + '"]}'
+  }).then(async (response) => { return response.json(); }).then(async (data) => {
+    for (let i = 0; i < data.length; i++)
+      addresses.push(data[i]['address']);
+  }).catch(function() {
+    SetRouterApiError();
+  });
+  
   return addresses;
 }
 
@@ -541,6 +667,9 @@ async function SetLocalhostRoute()
   let api_myip_url = null;
   let api_whois_url = null;
   let do_delay = false;
+  
+  if (!localhost)
+    return 0;
   
   let current_list = await fetch(protocol + "://" + router + "/rest/ip/firewall/address-list/print", {
     method: "POST",
@@ -683,7 +812,7 @@ async function SetPageRoute()
   let username = document.getElementById("router-user").value;
   let userpass = document.getElementById("router-password").value;
   let protocol = document.getElementById("protocol-selection").value;
-  let top_domains_template = ',' + document.getElementById("top-domains").value.replaceAll(' ', '').toLowerCase() + ',';
+  let last_domains_template = ',' + document.getElementById("last-domains").value.replaceAll(' ', '').toLowerCase() + ',';
   let as_address = document.getElementById("domain-address").checked;
   let add_www = document.getElementById("domain-www").checked;
   let add_all = document.getElementById("domain-all").checked;
@@ -697,7 +826,7 @@ async function SetPageRoute()
   let addresses = new Array();
   let domain_struct = domain.split('.');
   let add_count = 1;
-  if (add_www && top_domains_template.indexOf(',' + domain_struct[0] + ',') >= 0)
+  if (add_www && last_domains_template.indexOf(',' + domain_struct[0] + ',') >= 0)
     add_count = 2;
   else if (dd_all && domain_struct.length > 2)
     add_count = domain_struct.length - 1;
@@ -720,7 +849,7 @@ async function SetPageRoute()
         let domain_addresses = await GetHostsFromRouter(domain_levels[i], 'temporary-' + username, protocol + "://" + router, authuser);
         
         for (let j = 0; j < domain_addresses.length; j++)
-          if (!addresses.includes(domain_addresses[j])) {
+          if (!addresses.includes(domain_addresses[j]) && !IpIsExclude(domain_addresses[j])) {
             addresses.push(domain_addresses[j]);
             domains[domain_levels[i]].push(domain_addresses[j]);
           }
@@ -848,7 +977,8 @@ function SaveSettings()
   let username = document.getElementById("router-user").value;
   let userpass = document.getElementById("router-password").value;
   let protocol = document.getElementById("protocol-selection").value;
-  let top_domains_template = document.getElementById("top-domains").value;
+  let notrouted = document.getElementById("notrouted-list").value;
+  let last_domains_template = document.getElementById("last-domains").value;
   let as_address = document.getElementById("domain-address").checked;
   let add_www = document.getElementById("domain-www").checked;
   let add_all = document.getElementById("domain-all").checked;
@@ -864,10 +994,11 @@ function SaveSettings()
     ap: CodeString(userpass),
     protocol: protocol,
     defaults: {
+      notrouted: notrouted,
       dynamic: dynamic,
       time: dyntime,
-      www: top_domains_template,
-      what: (add_www ? "www" : (add_all ? "all" : "top")),
+      www: last_domains_template,
+      what: (add_www ? "www" : (add_all ? "all" : "last")),
       how: (as_address ? "address" : "name"),
       userip: localip_byuser,
       allip: page_allip,
@@ -1129,8 +1260,7 @@ function IpIsExclude(ip_str)
   if (ip === null)
     return false;
   
-  return IpInArray(ip, settings['exclude'], exclude_minprefix, exclude_maxprefix)
-    || IpInArray(ip, settings['notrouted'], notrouted_minprefix, notrouted_maxprefix);
+  return IpInArray(ip, settings['exclude'], exclude_minprefix, exclude_maxprefix) || IpInAddressesList(ip, notrouted_list);
 }
 
 function IpInArray(ip, arr, prefmin, prefmax)
@@ -1151,6 +1281,39 @@ function IpInArray(ip, arr, prefmin, prefmax)
   return false;
 }
 
+function IpInAddressesList(ip, list)
+{
+  for (let i = 0; i < list.length; i++)
+  {
+    let range = list[i].split('-');
+    
+    if (range.length > 1)
+    {
+      if (ParseIp(range[0]) <= ip && ParseIp(range[1]) >= ip)
+        return true;
+    }
+    else
+    {
+      let network = list[i].split('/');
+      
+      if (network.length > 1)
+      {
+        let ip_mask = parseInt(network[1]);
+        
+        if (GetNetworkByMask(ParseIp(network[0]), ip_mask) == GetNetworkByMask(ip, ip_mask))
+          return true;
+      }
+      else
+      {
+        if (ParseIp(list[i]) == ip)
+          return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
 function ParseIp(ip_str, ip_format = 10)
 {
   let ip_octets = ip_str.split('.');
@@ -1166,6 +1329,16 @@ function ParseIp(ip_str, ip_format = 10)
     return null;
   
   return new Uint32Array([((ip_octets[0] << 24) + (ip_octets[1] << 16) + (ip_octets[2] << 8) + ip_octets[3])])[0];
+}
+
+function GetNetworkByMask(ip_address, ip_mask)
+{
+  return new Uint32Array([ip_address & (!ip_mask ? 0 : (0xffffffff << (32 - ip_mask)))])[0];
+}
+
+function GetBroadcastByMask(ip_address, ip_mask)
+{
+  return new Uint32Array([ip_address | (ip_mask == 32 ? 0 : (0xffffffff >>> ip_mask))])[0];
 }
 
 function ae(ai)
